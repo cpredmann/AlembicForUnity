@@ -374,8 +374,7 @@ void aiMeshSchema<T, U>::updateSummary()
         else
         {
             summary.compute_normals =
-                config.normals_mode >= NormalsMode::AlwaysCompute ||
-                config.normals_mode == NormalsMode::AlwaysCompute ||
+                config.normals_mode <= NormalsMode::AlwaysCompute ||
                 (!summary.has_normals && config.normals_mode == NormalsMode::ComputeIfMissing);
             if (summary.compute_normals)
             {
