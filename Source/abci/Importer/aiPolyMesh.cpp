@@ -26,7 +26,7 @@ aiPolyMesh::~aiPolyMesh()
 {
 }
 
-aiPolyMesh::Sample* aiPolyMesh::newSample()
+aiPolyMeshSample* aiPolyMesh::newSample()
 {
     if (!m_varying_topology)
     {

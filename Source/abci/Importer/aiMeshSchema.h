@@ -105,7 +105,7 @@ public:
     std::future<void> m_async_copy;
 };
 
-template <typename T>
+template <typename T, typename U>
 class aiMeshSchema : public aiTSchema<T>
 {
 public:
@@ -114,10 +114,10 @@ public:
     void updateSummary();
     const aiMeshSummaryInternal& getSummary() const;
 
-    void readSampleBody(Sample& sample, uint64_t idx) override;
-    void cookSampleBody(Sample& sample) override;
+    void readSampleBody(U& sample, uint64_t idx) override;
+    void cookSampleBody(U& sample) override;
 
-    void onTopologyChange(Sample& sample);
+    void onTopologyChange(U& sample);
     void onTopologyDetermined();
 
 public:
@@ -143,22 +143,16 @@ protected:
     bool m_varying_topology = false;
 };
 
-template <typename T>
-AbcGeom::IN3fGeomParam aiMeshSchema<T>::readNormalsParam()
+template <typename T, typename U>
+AbcGeom::IN3fGeomParam aiMeshSchema<T, U>::readNormalsParam()
 {
     auto& summary = m_summary;
     auto param = m_schema.getNormalsParam();
     return param;
-    //param.getIndexed(sample.m_normals_sp, ss);
-    //if (summary.interpolate_normals)
-    //{
-    //    param.getIndexed(sample.m_normals_sp2, ss2);
-    //}
-
 }
 
-template<typename T>
-inline aiMeshSchema<T>::aiMeshSchema(aiObject * parent, const abcObject & abc)
+template<typename T, typename U>
+inline aiMeshSchema<T, U>::aiMeshSchema(aiObject * parent, const abcObject & abc)
     : aiTSchema(parent, abc)
 {
     // find vertex color and additional uv params
@@ -205,8 +199,8 @@ inline aiMeshSchema<T>::aiMeshSchema(aiObject * parent, const abcObject & abc)
     updateSummary();
 }
 
-template <typename T>
-void aiMeshSchema<T>::updateSummary()
+template <typename T, typename U>
+void aiMeshSchema<T, U>::updateSummary()
 {
     m_varying_topology = (m_schema.getTopologyVariance() == AbcGeom::kHeterogeneousTopology);
     auto& summary = m_summary;
@@ -353,7 +347,8 @@ void aiMeshSchema<T>::updateSummary()
         else
         {
             summary.compute_normals =
-                config.normals_mode <= NormalsMode::AlwaysCompute ||
+                config.normals_mode >= NormalsMode::AlwaysCompute ||
+                config.normals_mode == NormalsMode::AlwaysCompute ||
                 (!summary.has_normals && config.normals_mode == NormalsMode::ComputeIfMissing);
             if (summary.compute_normals)
             {
@@ -387,14 +382,14 @@ void aiMeshSchema<T>::updateSummary()
     }
 }
 
-template <typename T>
-const aiMeshSummaryInternal& aiMeshSchema<T>::getSummary() const
+template <typename T, typename U>
+const aiMeshSummaryInternal& aiMeshSchema<T, U>::getSummary() const
 {
     return m_summary;
 }
 
-template <typename T>
-void aiMeshSchema<T>::readSampleBody(Sample& sample, uint64_t idx)
+template <typename T, typename U>
+void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
 {
     auto ss = aiIndexToSampleSelector(idx);
     auto ss2 = aiIndexToSampleSelector(idx + 1);
@@ -507,8 +502,8 @@ void aiMeshSchema<T>::readSampleBody(Sample& sample, uint64_t idx)
     sample.m_topology_changed = topology_changed;
 }
 
-template <typename T>
-void aiMeshSchema<T>::cookSampleBody(Sample& sample)
+template <typename T, typename U>
+void aiMeshSchema<T, U>::cookSampleBody(U& sample)
 {
     auto& topology = *sample.m_topology;
     auto& refiner = topology.m_refiner;
@@ -769,8 +764,8 @@ void aiMeshSchema<T>::cookSampleBody(Sample& sample)
     }
 }
 
-template <typename T>
-void aiMeshSchema<T>::onTopologyChange(Sample& sample)
+template <typename T, typename U>
+void aiMeshSchema<T, U>::onTopologyChange(U& sample)
 {
     auto& summary = m_summary;
     auto& topology = *sample.m_topology;
@@ -1025,15 +1020,15 @@ void aiMeshSchema<T>::onTopologyChange(Sample& sample)
     // velocities are done in later part of cookSampleBody()
 }
 
-template <typename T>
-void aiMeshSchema<T>::onTopologyDetermined()
+template <typename T, typename U>
+void aiMeshSchema<T, U>::onTopologyDetermined()
 {
     // nothing to do for now
     // maybe I will need to notify C# side for optimization
 }
 
-template<typename T>
-inline aiMeshSchema<T>::~aiMeshSchema()
+template<typename T, typename U>
+inline aiMeshSchema<T, U>::~aiMeshSchema()
 {
 }
 

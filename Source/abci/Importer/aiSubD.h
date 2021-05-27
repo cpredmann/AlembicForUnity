@@ -17,18 +17,18 @@ struct aiSubDTraits
     using AbcSchemaT = AbcGeom::ISubDSchema;
 };
 
-class aiSubD : public aiMeshSchema<aiSubDTraits>
+class aiSubD : public aiMeshSchema<aiSubDTraits, aiSubDSample>
 {
 public:
     aiSubD(aiObject* parent, const abcObject& abc);
     ~aiSubD() override;
 
-    Sample* newSample() override;
+    aiSubDSample* newSample() override;
 };
 
 // Explicit specialization, since SubD does not have normals
 template <>
-inline AbcGeom::IN3fGeomParam aiMeshSchema<aiSubDTraits>::readNormalsParam()
+inline AbcGeom::IN3fGeomParam aiMeshSchema<aiSubDTraits, aiSubDSample>::readNormalsParam()
 {
     return AbcGeom::IN3fGeomParam();
 }

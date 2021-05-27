@@ -28,7 +28,7 @@ aiSubD::~aiSubD()
 {
 }
 
-aiSubD::Sample* aiSubD::newSample()
+aiSubDSample* aiSubD::newSample()
 {
     if (!m_varying_topology)
     {

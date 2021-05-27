@@ -14,13 +14,13 @@ struct aiPolyMeshTraits
     using AbcSchemaT = AbcGeom::IPolyMeshSchema;
 };
 
-class aiPolyMesh : public aiMeshSchema<aiPolyMeshTraits>
+class aiPolyMesh : public aiMeshSchema<aiPolyMeshTraits, aiPolyMeshSample>
 {
 public:
     aiPolyMesh(aiObject *parent, const abcObject &abc);
     ~aiPolyMesh() override;
 
-    Sample* newSample() override;
+    aiPolyMeshSample* newSample() override;
 };
 
 template<class Container>
