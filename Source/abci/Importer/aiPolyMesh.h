@@ -73,29 +73,3 @@ inline void Lerp(RawVector<T>& dst, const RawVector<T>& src1, const RawVector<T>
     Lerp(dst.data(), src1.data(), src2.data(), (int)src1.size(), w);
 }
 
-template<class T>
-static inline void copy_or_clear(T* dst, const IArray<T>& src, const MeshRefiner::Split& split)
-{
-    if (dst)
-    {
-        if (!src.empty())
-            src.copy_to(dst, split.vertex_count, split.vertex_offset);
-        else
-            memset(dst, 0, split.vertex_count * sizeof(T));
-    }
-}
-
-template<class T1, class T2>
-static inline void copy_or_clear_3_to_4(T1* dst, const IArray<T2>& src, const MeshRefiner::Split& split)
-{
-    if (dst)
-    {
-        if (!src.empty()) {
-            std::vector<T1> abc4(split.vertex_count);
-            std::transform(src.begin(), src.end(), abc4.begin(), [](const T2& c){ return T1{c.x, c.y, c.z, 1.f}; });
-            memcpy(dst, abc4.data() + split.vertex_offset, sizeof(T1) * split.vertex_count);
-        } else {
-            memset(dst, 0, split.vertex_count * sizeof(T1));
-        }
-    }
-}
