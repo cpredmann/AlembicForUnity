@@ -147,16 +147,16 @@ template <typename T, typename U>
 AbcGeom::IN3fGeomParam aiMeshSchema<T, U>::readNormalsParam()
 {
     auto& summary = m_summary;
-    auto param = m_schema.getNormalsParam();
+    auto param = this->m_schema.getNormalsParam();
     return param;
 }
 
 template<typename T, typename U>
 inline aiMeshSchema<T, U>::aiMeshSchema(aiObject * parent, const abcObject & abc)
-    : aiTSchema(parent, abc)
+    : aiTSchema<T>(parent, abc)
 {
     // find vertex color and additional uv params
-    auto geom_params = m_schema.getArbGeomParams();
+    auto geom_params = this->m_schema.getArbGeomParams();
     if (geom_params.valid())
     {
         size_t num_geom_params = geom_params.getNumProperties();
@@ -183,10 +183,10 @@ inline aiMeshSchema<T, U>::aiMeshSchema(aiObject * parent, const abcObject & abc
     }
 
     // find face set schema in children
-    size_t num_children = getAbcObject().getNumChildren();
+    size_t num_children = this->getAbcObject().getNumChildren();
     for (size_t i = 0; i < num_children; ++i)
     {
-        auto child = getAbcObject().getChild(i);
+        auto child = this->getAbcObject().getChild(i);
         if (child.valid() && AbcGeom::IFaceSetSchema::matches(child.getMetaData()))
         {
             auto so = Abc::ISchemaObject<AbcGeom::IFaceSetSchema>(child, Abc::kWrapExisting);
@@ -202,24 +202,24 @@ inline aiMeshSchema<T, U>::aiMeshSchema(aiObject * parent, const abcObject & abc
 template <typename T, typename U>
 void aiMeshSchema<T, U>::updateSummary()
 {
-    m_varying_topology = (m_schema.getTopologyVariance() == AbcGeom::kHeterogeneousTopology);
+    m_varying_topology = (this->m_schema.getTopologyVariance() == AbcGeom::kHeterogeneousTopology);
     auto& summary = m_summary;
-    auto& config = getConfig();
+    auto& config = this->getConfig();
 
     summary = {};
-    m_constant = m_schema.isConstant();
+    this->m_constant = this->m_schema.isConstant();
 
     // m_schema.isConstant() doesn't consider custom properties. check them
-    if (m_visibility_prop.valid() && !m_visibility_prop.isConstant())
+    if (this->m_visibility_prop.valid() && !this->m_visibility_prop.isConstant())
     {
-        m_constant = false;
+        this->m_constant = false;
     }
 
-    summary.topology_variance = (aiTopologyVariance)m_schema.getTopologyVariance();
+    summary.topology_variance = (aiTopologyVariance)this->m_schema.getTopologyVariance();
 
     // counts
     {
-        auto prop = m_schema.getFaceCountsProperty();
+        auto prop = this->m_schema.getFaceCountsProperty();
         if (prop.valid() && prop.getNumSamples() > 0)
         {
             summary.has_counts = true;
@@ -228,7 +228,7 @@ void aiMeshSchema<T, U>::updateSummary()
 
     // indices
     {
-        auto prop = m_schema.getFaceIndicesProperty();
+        auto prop = this->m_schema.getFaceIndicesProperty();
         if (prop.valid() && prop.getNumSamples() > 0)
         {
             summary.has_indices = true;
@@ -237,7 +237,7 @@ void aiMeshSchema<T, U>::updateSummary()
 
     // points
     {
-        auto prop = m_schema.getPositionsProperty();
+        auto prop = this->m_schema.getPositionsProperty();
         if (prop.valid() && prop.getNumSamples() > 0 )
         {
             Alembic::Util::Dimensions dim;
@@ -247,7 +247,7 @@ void aiMeshSchema<T, U>::updateSummary()
                 summary.has_points = true;
                 summary.constant_points = prop.isConstant();
                 if (!summary.constant_points)
-                    m_constant = false;
+                    this->m_constant = false;
             }
         }
     }
@@ -261,20 +261,20 @@ void aiMeshSchema<T, U>::updateSummary()
             summary.has_normals = true;
             summary.constant_normals = param.isConstant() && config.normals_mode != NormalsMode::AlwaysCompute;
             if (!summary.constant_normals)
-                m_constant = false;
+                this->m_constant = false;
         }
     }
 
     // uv0
     {
-        auto param = m_schema.getUVsParam();
+        auto param = this->m_schema.getUVsParam();
         if (param.valid() && param.getNumSamples() > 0 && param.getScope() != AbcGeom::kUnknownScope)
         {
             summary.has_uv0_prop = true;
             summary.has_uv0 = true;
             summary.constant_uv0 = param.isConstant();
             if (!summary.constant_uv0)
-                m_constant = false;
+                this->m_constant = false;
         }
     }
 
@@ -287,7 +287,7 @@ void aiMeshSchema<T, U>::updateSummary()
             summary.has_uv1 = true;
             summary.constant_uv1 = param.isConstant();
             if (!summary.constant_uv1)
-                m_constant = false;
+                this->m_constant = false;
         }
     }
 
@@ -300,7 +300,7 @@ void aiMeshSchema<T, U>::updateSummary()
             summary.has_rgba = true;
             summary.constant_rgba = param.isConstant();
             if (!summary.constant_rgba)
-                m_constant = false;
+                this->m_constant = false;
         }
     }
 
@@ -313,11 +313,11 @@ void aiMeshSchema<T, U>::updateSummary()
             summary.has_rgb = true;
             summary.constant_rgb = param.isConstant();
             if (!summary.constant_rgb)
-                m_constant = false;
+                this->m_constant = false;
         }
     }
 
-    bool interpolate = config.interpolate_samples && !m_constant && !m_varying_topology;
+    bool interpolate = config.interpolate_samples && !this->m_constant && !m_varying_topology;
     summary.interpolate_points = interpolate && !summary.constant_points;
 
     // velocities
@@ -328,7 +328,7 @@ void aiMeshSchema<T, U>::updateSummary()
     }
     else
     {
-        auto velocities = m_schema.getVelocitiesProperty();
+        auto velocities = this->m_schema.getVelocitiesProperty();
         if (velocities.valid() && velocities.getNumSamples() > 0)
         {
             summary.has_velocities_prop = true;
@@ -398,7 +398,7 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
     auto& refiner = topology.m_refiner;
     auto& summary = m_summary;
 
-    bool topology_changed = m_varying_topology || m_force_update_local;
+    bool topology_changed = m_varying_topology || this->m_force_update_local;
 
     if (topology_changed)
         topology.clear();
@@ -406,12 +406,12 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
     // topology
     if (summary.has_counts && (!topology.m_counts_sp || topology_changed))
     {
-        m_schema.getFaceCountsProperty().get(topology.m_counts_sp, ss);
+        this->m_schema.getFaceCountsProperty().get(topology.m_counts_sp, ss);
         topology_changed = true;
     }
     if (summary.has_indices && (!topology.m_indices_sp || topology_changed))
     {
-        m_schema.getFaceIndicesProperty().get(topology.m_indices_sp, ss);
+        this->m_schema.getFaceIndicesProperty().get(topology.m_indices_sp, ss);
         topology_changed = true;
     }
 
@@ -428,7 +428,7 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
     // points
     if (summary.has_points && m_constant_points.empty())
     {
-        auto param = m_schema.getPositionsProperty();
+        auto param = this->m_schema.getPositionsProperty();
         param.get(sample.m_points_sp, ss);
         if (summary.interpolate_points)
         {
@@ -438,7 +438,7 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
         {
             if (summary.has_velocities_prop)
             {
-                m_schema.getVelocitiesProperty().get(sample.m_velocities_sp, ss);
+                this->m_schema.getVelocitiesProperty().get(sample.m_velocities_sp, ss);
             }
         }
     }
@@ -457,7 +457,7 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
     // uv0
     if (m_constant_uv0.empty() && summary.has_uv0_prop)
     {
-        auto param = m_schema.getUVsParam();
+        auto param = this->m_schema.getUVsParam();
         param.getIndexed(sample.m_uv0_sp, ss);
         if (summary.interpolate_uv0)
         {
@@ -495,7 +495,7 @@ void aiMeshSchema<T, U>::readSampleBody(U& sample, uint64_t idx)
         }
     }
 
-    auto bounds_param = m_schema.getSelfBoundsProperty();
+    auto bounds_param = this->m_schema.getSelfBoundsProperty();
     if (bounds_param && bounds_param.getNumSamples() > 0)
         bounds_param.get(sample.m_bounds, ss);
 
@@ -507,18 +507,18 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
 {
     auto& topology = *sample.m_topology;
     auto& refiner = topology.m_refiner;
-    auto& config = getConfig();
+    auto& config = this->getConfig();
     auto& summary = getSummary();
 
     // interpolation can't work with varying topology
-    if (m_varying_topology && !m_sample_index_changed)
+    if (m_varying_topology && !this->m_sample_index_changed)
         return;
 
     if (sample.m_topology_changed)
     {
         onTopologyChange(sample);
     }
-    else if (m_sample_index_changed)
+    else if (this->m_sample_index_changed)
     {
         onTopologyDetermined();
 
@@ -599,7 +599,7 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
         onTopologyDetermined();
     }
 
-    if (m_sample_index_changed)
+    if (this->m_sample_index_changed)
     {
         // both in the case of topology changed or sample index changed
 
@@ -663,7 +663,7 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
         if (summary.compute_velocities)
             sample.m_points_int.swap(sample.m_points_prev);
 
-        Lerp(sample.m_points_int, sample.m_points, sample.m_points2, m_current_time_offset);
+        Lerp(sample.m_points_int, sample.m_points, sample.m_points2, this->m_current_time_offset);
         sample.m_points_ref = sample.m_points_int;
 
         if (summary.compute_velocities)
@@ -689,11 +689,11 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
     }
     else if (summary.interpolate_normals)
     {
-        Lerp(sample.m_normals_int, sample.m_normals, sample.m_normals2, (float)m_current_time_offset);
+        Lerp(sample.m_normals_int, sample.m_normals, sample.m_normals2, (float)this->m_current_time_offset);
         Normalize(sample.m_normals_int.data(), (int)sample.m_normals.size());
         sample.m_normals_ref = sample.m_normals_int;
     }
-    else if (summary.compute_normals && (m_sample_index_changed || summary.interpolate_points))
+    else if (summary.compute_normals && (this->m_sample_index_changed || summary.interpolate_points))
     {
         if (sample.m_points_ref.empty())
         {
@@ -718,7 +718,7 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
     {
         // do nothing
     }
-    else if (summary.compute_tangents && (m_sample_index_changed || summary.interpolate_points || summary.interpolate_normals))
+    else if (summary.compute_tangents && (this->m_sample_index_changed || summary.interpolate_points || summary.interpolate_normals))
     {
         if (sample.m_points_ref.empty() || sample.m_uv0_ref.empty() || sample.m_normals_ref.empty())
         {
@@ -738,28 +738,28 @@ void aiMeshSchema<T, U>::cookSampleBody(U& sample)
     // uv0
     if (summary.interpolate_uv0)
     {
-        Lerp(sample.m_uv0_int, sample.m_uv0, sample.m_uv02, m_current_time_offset);
+        Lerp(sample.m_uv0_int, sample.m_uv0, sample.m_uv02, this->m_current_time_offset);
         sample.m_uv0_ref = sample.m_uv0_int;
     }
 
     // uv1
     if (summary.interpolate_uv1)
     {
-        Lerp(sample.m_uv1_int, sample.m_uv1, sample.m_uv12, m_current_time_offset);
+        Lerp(sample.m_uv1_int, sample.m_uv1, sample.m_uv12, this->m_current_time_offset);
         sample.m_uv1_ref = sample.m_uv1_int;
     }
 
     // colors
     if (summary.interpolate_rgba)
     {
-        Lerp(sample.m_rgba_int, sample.m_rgba, sample.m_rgba2, m_current_time_offset);
+        Lerp(sample.m_rgba_int, sample.m_rgba, sample.m_rgba2, this->m_current_time_offset);
         sample.m_rgba_ref = sample.m_rgba_int;
     }
 
     // rgb
     if (summary.interpolate_rgb)
     {
-        Lerp(sample.m_rgb_int, sample.m_rgb, sample.m_rgb2, m_current_time_offset);
+        Lerp(sample.m_rgb_int, sample.m_rgb, sample.m_rgb2, this->m_current_time_offset);
         sample.m_rgb_ref = sample.m_rgb_int;
     }
 }
@@ -770,7 +770,7 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
     auto& summary = m_summary;
     auto& topology = *sample.m_topology;
     auto& refiner = topology.m_refiner;
-    auto& config = getConfig();
+    auto& config = this->getConfig();
 
     if (!topology.m_counts_sp || !topology.m_indices_sp || !sample.m_points_sp)
         return;
@@ -800,15 +800,15 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
         if (sample.m_normals_sp.isIndexed() && sample.m_normals_sp.getIndices()->size() == refiner.indices.size())
         {
             IArray<int> indices{ (int*)sample.m_normals_sp.getIndices()->get(), sample.m_normals_sp.getIndices()->size() };
-            refiner.addIndexedAttribute<abcV3>(src, indices, dst, topology.m_remap_normals);
+            refiner.template addIndexedAttribute<abcV3>(src, indices, dst, topology.m_remap_normals);
         }
         else if (src.size() == refiner.indices.size())
         {
-            refiner.addExpandedAttribute<abcV3>(src, dst, topology.m_remap_normals);
+            refiner.template addExpandedAttribute<abcV3>(src, dst, topology.m_remap_normals);
         }
         else if (src.size() == refiner.points.size())
         {
-            refiner.addIndexedAttribute<abcV3>(src, refiner.indices, dst, topology.m_remap_normals);
+            refiner.template addIndexedAttribute<abcV3>(src, refiner.indices, dst, topology.m_remap_normals);
         }
         else
         {
@@ -826,15 +826,15 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
         if (sample.m_uv0_sp.isIndexed() && sample.m_uv0_sp.getIndices()->size() == refiner.indices.size())
         {
             IArray<int> indices{ (int*)sample.m_uv0_sp.getIndices()->get(), sample.m_uv0_sp.getIndices()->size() };
-            refiner.addIndexedAttribute<abcV2>(src, indices, dst, topology.m_remap_uv0);
+            refiner.template addIndexedAttribute<abcV2>(src, indices, dst, topology.m_remap_uv0);
         }
         else if (src.size() == refiner.indices.size())
         {
-            refiner.addExpandedAttribute<abcV2>(src, dst, topology.m_remap_uv0);
+            refiner.template addExpandedAttribute<abcV2>(src, dst, topology.m_remap_uv0);
         }
         else if (src.size() == refiner.points.size())
         {
-            refiner.addIndexedAttribute<abcV2>(src, refiner.indices, dst, topology.m_remap_uv0);
+            refiner.template addIndexedAttribute<abcV2>(src, refiner.indices, dst, topology.m_remap_uv0);
         }
         else
         {
@@ -852,15 +852,15 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
         if (sample.m_uv1_sp.isIndexed() && sample.m_uv1_sp.getIndices()->size() == refiner.indices.size())
         {
             IArray<int> uv1_indices{ (int*)sample.m_uv1_sp.getIndices()->get(), sample.m_uv1_sp.getIndices()->size() };
-            refiner.addIndexedAttribute<abcV2>(src, uv1_indices, dst, topology.m_remap_uv1);
+            refiner.template addIndexedAttribute<abcV2>(src, uv1_indices, dst, topology.m_remap_uv1);
         }
         else if (src.size() == refiner.indices.size())
         {
-            refiner.addExpandedAttribute<abcV2>(src, dst, topology.m_remap_uv1);
+            refiner.template addExpandedAttribute<abcV2>(src, dst, topology.m_remap_uv1);
         }
         else if (src.size() == refiner.points.size())
         {
-            refiner.addIndexedAttribute<abcV2>(src, refiner.indices, dst, topology.m_remap_uv1);
+            refiner.template addIndexedAttribute<abcV2>(src, refiner.indices, dst, topology.m_remap_uv1);
         }
         else
         {
@@ -878,15 +878,15 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
         if (sample.m_rgba_sp.isIndexed() && sample.m_rgba_sp.getIndices()->size() == refiner.indices.size())
         {
             IArray<int> colors_indices{ (int*)sample.m_rgba_sp.getIndices()->get(), sample.m_rgba_sp.getIndices()->size() };
-            refiner.addIndexedAttribute<abcC4>(src, colors_indices, dst, topology.m_remap_rgba);
+            refiner.template addIndexedAttribute<abcC4>(src, colors_indices, dst, topology.m_remap_rgba);
         }
         else if (src.size() == refiner.indices.size())
         {
-            refiner.addExpandedAttribute<abcC4>(src, dst, topology.m_remap_rgba);
+            refiner.template addExpandedAttribute<abcC4>(src, dst, topology.m_remap_rgba);
         }
         else if (src.size() == refiner.points.size())
         {
-            refiner.addIndexedAttribute<abcC4>(src, refiner.indices, dst, topology.m_remap_rgba);
+            refiner.template addIndexedAttribute<abcC4>(src, refiner.indices, dst, topology.m_remap_rgba);
         }
         else
         {
@@ -904,15 +904,15 @@ void aiMeshSchema<T, U>::onTopologyChange(U& sample)
         if (sample.m_rgb_sp.isIndexed() && sample.m_rgb_sp.getIndices()->size() == refiner.indices.size())
         {
             IArray<int> rgb_indices{ (int*)sample.m_rgb_sp.getIndices()->get(), sample.m_rgb_sp.getIndices()->size() };
-            refiner.addIndexedAttribute<abcC3>(src, rgb_indices, dst, topology.m_remap_rgb);
+            refiner.template addIndexedAttribute<abcC3>(src, rgb_indices, dst, topology.m_remap_rgb);
         }
         else if (src.size() == refiner.indices.size())
         {
-            refiner.addExpandedAttribute<abcC3>(src, dst, topology.m_remap_rgb);
+            refiner.template addExpandedAttribute<abcC3>(src, dst, topology.m_remap_rgb);
         }
         else if (src.size() == refiner.points.size())
         {
-            refiner.addIndexedAttribute<abcC3>(src, refiner.indices, dst, topology.m_remap_rgb);
+            refiner.template addIndexedAttribute<abcC3>(src, refiner.indices, dst, topology.m_remap_rgb);
         }
         else
         {
